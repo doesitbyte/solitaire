@@ -5,4 +5,6 @@ const scriptLocation =
     ?.getAttribute("src")
     ?.replace("app.js", "") ?? "";
 
+console.log(`${location}${scriptLocation}`);
+
 export const baseURL = `${location}${scriptLocation}`;

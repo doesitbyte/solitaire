@@ -1,36 +1,34 @@
 import Card from "./Card";
-import { NUM_CARDS, Suit } from "./constants/deck";
+import { Suit } from "./constants/deck";
 import { PileId, TABLEAU_PILES } from "./constants/table";
-
-const NUM_VALUES = 13;
 
 export default class Deck {
   public cards: Card[] = [];
+  public difficulty: string = "";
+  public index: number = 0;
 
-  public constructor(scene: Phaser.Scene) {
-    for (let i = 1; i < NUM_VALUES + 1; i += 1) {
-      Object.values(Suit).forEach((t) => {
-        this.cards.push(new Card(scene, t, i));
-      });
-    }
+  public constructor(scene: Phaser.Scene, difficulty: string) {
+    this.cards = [];
 
-    this.shuffle(this.cards);
-    this.deal(scene);
+    // Load the appropriate shuffle based on difficulty
+    const shuffle = this.loadShuffle(scene, difficulty);
+
+    this.deal(scene, shuffle.deck);
   }
 
-  public deal(scene: Phaser.Scene): void {
+  public deal(scene: Phaser.Scene, deck: any): void {
     // Flip all back
     this.cards.forEach((card: Card) => {
       card.flipBack(scene);
     });
 
-    // Set positions
+    // Set positions for tableau piles
     let x = 0;
-    for (let i = 0; i < TABLEAU_PILES.length; i += 1) {
-      for (let t = 0; t < i + 1; t += 1) {
+    for (let i = 0; i < deck["tableau piles"].length; i += 1) {
+      for (let t = 0; t < deck["tableau piles"][i].length; t += 1) {
         this.cards[x].reposition(TABLEAU_PILES[i], t);
 
-        if (i === t) {
+        if (t === deck["tableau piles"][i].length - 1) {
           this.cards[x].flip(scene);
         }
 
@@ -38,18 +36,83 @@ export default class Deck {
       }
     }
 
-    // Rest go in stack
-    for (let i = x; i < NUM_CARDS; i += 1) {
-      this.cards[i].reposition(PileId.Stock, i - x);
+    // Set positions for stock pile
+    for (let i = 0; i < deck.stock.length; i += 1) {
+      this.cards[x].reposition(PileId.Stock, i);
+      x += 1;
     }
   }
 
-  public shuffle(a: Card[]): Card[] {
-    for (let i = a.length - 1; i > 0; i -= 1) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [a[i], a[j]] = [a[j], a[i]];
+  public redeal(scene: Phaser.Scene): void {
+    const shuffle = this.loadShuffle(scene, this.difficulty, this.index);
+    this.deal(scene, shuffle.deck);
+  }
+
+  public loadShuffle(
+    scene: Phaser.Scene,
+    difficulty: string,
+    index?: number
+  ): any {
+    const shuffles = scene.cache.json.get(difficulty + "_shuffles");
+
+    let randomIndex;
+    if (index) {
+      randomIndex = index;
+    } else {
+      randomIndex = Math.floor(Math.random() * shuffles.length);
     }
-    return a;
+
+    const shuffle = shuffles[randomIndex];
+    this.cards = [];
+
+    // Populate cards based on the shuffle
+    shuffle.deck["tableau piles"].forEach((pile: string[]) => {
+      pile.forEach((card: string) => {
+        const value = this.getCardValue(card.slice(0, -1)); // Extract value
+        const suit = this.getCardSuit(card.slice(-1)); // Extract suit
+        this.cards.push(new Card(scene, suit, value));
+      });
+    });
+
+    shuffle.deck.stock.forEach((card: string) => {
+      const value = this.getCardValue(card.slice(0, -1)); // Extract value
+      const suit = this.getCardSuit(card.slice(-1)); // Extract suit
+      this.cards.push(new Card(scene, suit, value));
+    });
+
+    this.difficulty = shuffle.difficulty;
+    this.index = randomIndex;
+
+    return shuffle;
+  }
+
+  private getCardValue(value: string): number {
+    const valueMap: { [key: string]: number } = {
+      A: 1,
+      "2": 2,
+      "3": 3,
+      "4": 4,
+      "5": 5,
+      "6": 6,
+      "7": 7,
+      "8": 8,
+      "9": 9,
+      "10": 10,
+      J: 11,
+      Q: 12,
+      K: 13,
+    };
+    return valueMap[value];
+  }
+
+  private getCardSuit(suit: string): Suit {
+    const suitMap: { [key: string]: Suit } = {
+      C: Suit.Clubs,
+      D: Suit.Diamonds,
+      H: Suit.Hearts,
+      S: Suit.Spades,
+    };
+    return suitMap[suit];
   }
 
   public cardChildren(card: Card): Card[] {
@@ -75,5 +138,10 @@ export default class Deck {
       (acc: number, card: Card) => (card.pile === pile ? acc + 1 : acc),
       0
     );
+  }
+
+  public clear(): void {
+    this.cards.forEach((card: Card) => card.destroy());
+    this.cards = [];
   }
 }

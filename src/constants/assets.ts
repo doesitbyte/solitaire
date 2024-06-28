@@ -10,3 +10,9 @@ export const spritesheets = [
     key: "img_cards",
   },
 ];
+
+export const difficulties = [
+  { file: "shuffles/easy_shuffles_1.json", key: "easy_shuffles" },
+  { file: "shuffles/medium_shuffles_1.json", key: "medium_shuffles" },
+  { file: "shuffles/hard_shuffles_1.json", key: "hard_shuffles" },
+];

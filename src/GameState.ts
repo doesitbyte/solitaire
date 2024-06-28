@@ -43,6 +43,8 @@ export default class GameState extends Phaser.Scene {
 
   private winText!: Phaser.GameObjects.Text;
 
+  private difficultyMenu!: Phaser.GameObjects.Container;
+
   public constructor() {
     super(sceneConfig);
   }
@@ -57,12 +59,19 @@ export default class GameState extends Phaser.Scene {
     this.add.image(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, "img_background");
 
     // Add deck
-    this.deck = new Deck(this);
+    this.deck = new Deck(this, "easy");
 
     this.createZones();
     this.createInputListeners();
     this.createButtons();
     this.createText();
+  }
+
+  public clearGame(): void {
+    this.deck.clear();
+    this.score = 0;
+    this.moves = [];
+    this.dragChildren = [];
   }
 
   public createZones(): void {
@@ -155,7 +164,8 @@ export default class GameState extends Phaser.Scene {
       .on(
         "pointerdown",
         () => {
-          this.deck.deal(this);
+          this.clearGame();
+          this.deck.redeal(this);
           this.winText.setVisible(false);
           this.score = 0;
         },
@@ -171,10 +181,11 @@ export default class GameState extends Phaser.Scene {
       .on(
         "pointerdown",
         () => {
-          this.deck.shuffle(this.deck.cards);
-          this.deck.deal(this);
-          this.winText.setVisible(false);
-          this.score = 0;
+          this.showDifficultyMenu();
+          // this.deck.shuffle(this.deck.cards);
+          // this.deck.deal(this);
+          // this.winText.setVisible(false);
+          // this.score = 0;
         },
         this
       );
@@ -205,6 +216,54 @@ export default class GameState extends Phaser.Scene {
         },
         this
       );
+  }
+
+  public showDifficultyMenu(): void {
+    const rect = this.add.graphics();
+    rect.fillStyle(0xffffff, 1);
+    rect.fillRect(SCREEN_WIDTH / 2 - 100, SCREEN_HEIGHT / 2 - 100, 200, 200);
+    const easy = this.add
+      .text(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 - 50, "Easy", {
+        fontSize: "32px",
+        color: "#000",
+      })
+      .setOrigin(0.5, 0.5);
+    easy.setInteractive().on("pointerdown", () => {
+      this.dealNewDeck("easy");
+      this.hideDifficultyMenu();
+    });
+    const medium = this.add
+      .text(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, "Medium", {
+        fontSize: "32px",
+        color: "#000",
+      })
+      .setOrigin(0.5, 0.5);
+    medium.setInteractive().on("pointerdown", () => {
+      this.dealNewDeck("medium");
+      this.hideDifficultyMenu();
+    });
+    const hard = this.add
+      .text(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 + 50, "Hard", {
+        fontSize: "32px",
+        color: "#000",
+      })
+      .setOrigin(0.5, 0.5);
+    hard.setInteractive().on("pointerdown", () => {
+      this.dealNewDeck("hard");
+      this.hideDifficultyMenu();
+    });
+    this.difficultyMenu = this.add.container(0, 0, [rect, easy, medium, hard]);
+    this.difficultyMenu.setDepth(2000);
+  }
+
+  public hideDifficultyMenu(): void {
+    this.difficultyMenu.destroy();
+  }
+
+  public dealNewDeck(difficulty: string): void {
+    this.clearGame();
+    const shuffle = this.deck.loadShuffle(this, difficulty);
+    this.deck.deal(this, shuffle.deck);
   }
 
   public createText(): void {

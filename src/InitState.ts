@@ -1,7 +1,7 @@
 import * as Phaser from "phaser";
 
 // Card images
-import { images, spritesheets } from "./constants/assets";
+import { images, spritesheets, difficulties } from "./constants/assets";
 import { baseURL } from "./constants/loading";
 
 const sceneConfig: Phaser.Types.Scenes.SettingsConfig = {
@@ -63,6 +63,9 @@ export default class InitState extends Phaser.Scene {
     spritesheets.forEach(({ file, frameHeight, frameWidth, key }) => {
       this.load.spritesheet(key, file, { frameHeight, frameWidth });
     });
+
+    // JSON
+    difficulties.forEach(({ file, key }) => this.load.json(key, file));
   }
 
   public create(): void {

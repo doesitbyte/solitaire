@@ -12,3 +12,9 @@ node_modules/
 # Build
 dist/
 /npm-debug.log
+
+# Custom
+seeds/
+dataGen.py
+output.txt
+shuffles_local/
